@@ -11,20 +11,20 @@ class ContentViewSet(ModelViewSet):
     queryset = Content.objects.all()
     permission_classes = [IsAuthenticated, ContentPermission]
 
-    def get_queryset(self): #wich user gets to see what part of the content
+    def get_queryset(self):
         user = self.request.user
-        #gets membership
         membership = user.memberships.first()
-
         if not membership:
             return Content.objects.filter(created_by=user)
-        
-        if membership.role=='ORG_HEAD':
-            return Content.objects.filter(organization=membership.organization)
-        
-        if(membership.role == 'EMPLOYEE'):
-            return Content.objects.filter(created_by = user)
-        
+        if membership.role.name == 'ORG_HEAD':
+            return Content.objects.filter(
+            organization=membership.organization
+            )
+        if membership.role.name == 'EMPLOYEE':
+            return Content.objects.filter(
+            created_by=user
+            )
+
         return Content.objects.none()
         
         # query_map = {
@@ -44,6 +44,6 @@ class ContentViewSet(ModelViewSet):
         user = self.request.user
         membership = user.memberships.first()
         serializer.save(
-            created_by = user,
-            organization = membership.organization if membership else None
+            created_by=user,
+            organization=membership.organization if membership else None
         )
