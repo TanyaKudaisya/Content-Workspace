@@ -13,21 +13,37 @@ class ContentViewSet(ModelViewSet):
 
     def get_queryset(self): #wich user gets to see what part of the content
         user = self.request.user
-        query_map = {
-            'SUPERUSER': Content.objects.all(),
-            'ORG_HEAD': Content.objects.filter(
-                organization = user.organization
-            ),
-            'EMPLOYEE': Content.objects.filter(
-                created_by=user
-            )
-        }
-        return query_map.get(user.role, Content.objects.none())
+        #gets membership
+        membership = user.memberships.first()
+
+        if not membership:
+            return Content.objects.filter(created_by=user)
+        
+        if membership.role=='ORG_HEAD':
+            return Content.objects.filter(organization=membership.organization)
+        
+        if(membership.role == 'EMPLOYEE'):
+            return Content.objects.filter(created_by = user)
+        
+        return Content.objects.none()
+        
+        # query_map = {
+        #     'SUPERUSER': Content.objects.all(),
+        #     'ORG_HEAD': Content.objects.filter(
+        #         organization = user.organization
+        #     ),
+        #     'EMPLOYEE': Content.objects.filter(
+        #         created_by=user
+        #     )
+        # }
+        # return query_map.get(user.role, Content.objects.none())
     
     
     #assign the role of creator
     def perform_create(self, serializer):
+        user = self.request.user
+        membership = user.memberships.first()
         serializer.save(
-            created_by = self.request.user,
-            organization = self.request.user.organization
+            created_by = user,
+            organization = membership.organization if membership else None
         )
